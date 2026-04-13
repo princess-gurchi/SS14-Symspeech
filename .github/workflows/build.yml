@@ -2,7 +2,7 @@ name: Build and Publish production
 
 on:
   push:
-    branches: [ "main", "image-building--ci" ]
+    branches: [ "main", "image-building--CI" ]
 
 jobs:
   build-push:
@@ -13,18 +13,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - run: |
-          mkdir -p ~/.docker
-          AUTH=$(echo -n "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" | base64)
-          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"$AUTH\"}}}" > ~/.docker/config.json
-
-      - uses: docker://gcr.io/kaniko-project/executor:debug
+      - uses: docker/login-action@v4
         with:
-          args: >-
-            --context=${{ github.workspace }}
-            --dockerfile=${{ github.workspace }}/Dockerfile
-            --destination=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
-            --destination=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}
-        env:
-          DOCKER_CONFIG: /github/home/.docker
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v6
+        id: metadata
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+      - uses: int128/kaniko-action@v1
+        with:
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
