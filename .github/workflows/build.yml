@@ -12,11 +12,14 @@ jobs:
       packages: write  # Required to push to GHCR
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Build and push image
-        uses: docker://gcr.io/kaniko-project/executor:debug
+      - run: |
+          mkdir -p ~/.docker
+          AUTH=$(echo -n "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" | base64)
+          echo "{\"auths\":{\"ghcr.io\":{\"auth\":\"$AUTH\"}}}" > ~/.docker/config.json
+
+      - uses: docker://gcr.io/kaniko-project/executor:debug
         with:
           args: >-
             --context=${{ github.workspace }}
@@ -24,11 +27,4 @@ jobs:
             --destination=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
             --destination=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}
         env:
-          CANIKO_DOCKER_CONFIG: |
-            {
-              "auths": {
-                "ghcr.io": {
-                  "auth": "${{ secrets.GITHUB_TOKEN }}"
-                }
-              }
-            }
+          DOCKER_CONFIG: /github/home/.docker
