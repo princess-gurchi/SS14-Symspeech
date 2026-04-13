@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build and push image
-        uses: gcr.io/kaniko-project/executor:debug
+        uses: docker://gcr.io/kaniko-project/executor:debug
         with:
           args: >-
             --context=${{ github.workspace }}
