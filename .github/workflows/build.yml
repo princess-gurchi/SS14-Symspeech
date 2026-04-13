@@ -1,0 +1,34 @@
+name: Build and Publish production
+
+on:
+  push:
+    branches: [ "main", "image-building--ci" ]
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write  # Required to push to GHCR
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and push image
+        uses: gcr.io/kaniko-project/executor:debug
+        with:
+          args: >-
+            --context=${{ github.workspace }}
+            --dockerfile=${{ github.workspace }}/Dockerfile
+            --destination=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
+            --destination=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}
+        env:
+          CANIKO_DOCKER_CONFIG: |
+            {
+              "auths": {
+                "ghcr.io": {
+                  "auth": "${{ secrets.GITHUB_TOKEN }}"
+                }
+              }
+            }
